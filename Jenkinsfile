@@ -9,7 +9,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Source code checked out by Jenkins'
+                echo 'GitHub automatically triggered Jenkins!'
             }
         }
 
