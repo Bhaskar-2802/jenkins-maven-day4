@@ -98,7 +98,7 @@ pipeline {
             }
         }
 
-        stage('Use Secret') {
+        stage('Use Secret Text') {
             steps {
                 withCredentials([
                     string(
@@ -106,8 +106,24 @@ pipeline {
                         variable: 'MY_SECRET'
                     )
                 ]) {
-                    echo 'Secret was successfully loaded into the pipeline.'
+                    echo 'Secret Text loaded successfully.'
                     echo "Secret length: ${MY_SECRET.length()}"
+                }
+            }
+        }
+
+        stage('Username Password Credential') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'demo-user-pass',
+                        usernameVariable: 'USERNAME',
+                        passwordVariable: 'PASSWORD'
+                    )
+                ]) {
+                    echo "Username loaded successfully: ${USERNAME}"
+                    echo 'Password loaded securely.'
+                    echo "Password length: ${PASSWORD.length()}"
                 }
             }
         }
@@ -172,6 +188,7 @@ pipeline {
             echo "Application: ${env.APP_NAME}"
             echo "Environment: ${params.DEPLOY_ENV}"
             echo 'Artifact archived successfully.'
+            echo 'Credentials loaded securely.'
             echo '======================================'
         }
 
