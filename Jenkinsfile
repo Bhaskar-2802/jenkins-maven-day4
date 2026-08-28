@@ -2,22 +2,19 @@ pipeline {
 
     agent any
 
-    // Day 6: Build Parameters
     parameters {
         choice(
             name: 'DEPLOY_ENV',
             choices: ['dev', 'qa', 'prod'],
-            description: 'Choose the environment'
+            description: 'Choose the deployment environment'
         )
     }
 
-    // Day 6: Environment Variables
     environment {
         APP_NAME = 'jenkins-maven-day4'
         ENVIRONMENT = 'dev'
     }
 
-    // Maven configuration
     tools {
         maven 'Maven-3.9.16'
     }
@@ -57,6 +54,32 @@ pipeline {
             }
         }
 
+        stage('Parallel Checks') {
+            parallel {
+
+                stage('Unit Test Check') {
+                    steps {
+                        echo 'Running Unit Test Check...'
+                        bat 'mvn test'
+                    }
+                }
+
+                stage('Code Quality Check') {
+                    steps {
+                        echo 'Running Code Quality Check...'
+                        bat 'mvn -q test'
+                    }
+                }
+
+                stage('Security Check') {
+                    steps {
+                        echo 'Running Security Check...'
+                        echo 'Security scan simulation completed.'
+                    }
+                }
+            }
+        }
+
         stage('Package') {
             steps {
                 echo 'Creating JAR artifact...'
@@ -74,22 +97,88 @@ pipeline {
                 )
             }
         }
+
+        stage('Use Secret') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'demo-secret',
+                        variable: 'MY_SECRET'
+                    )
+                ]) {
+                    echo 'Secret was successfully loaded into the pipeline.'
+                    echo "Secret length: ${MY_SECRET.length()}"
+                }
+            }
+        }
+
+        stage('Deploy to DEV') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'dev'
+                }
+            }
+
+            steps {
+                echo 'Deploying application to DEV environment...'
+            }
+        }
+
+        stage('Deploy to QA') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'qa'
+                }
+            }
+
+            steps {
+                echo 'Deploying application to QA environment...'
+            }
+        }
+
+        stage('Production Approval') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'prod'
+                }
+            }
+
+            steps {
+                input(
+                    message: 'Are you sure you want to deploy to PRODUCTION?',
+                    ok: 'Approve Production Deployment'
+                )
+            }
+        }
+
+        stage('Deploy to PROD') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'prod'
+                }
+            }
+
+            steps {
+                echo 'Deploying application to PROD environment...'
+            }
+        }
     }
 
     post {
 
         success {
             echo '======================================'
-            echo 'Maven pipeline completed successfully!'
+            echo 'PIPELINE SUCCESSFUL!'
             echo "Application: ${env.APP_NAME}"
             echo "Environment: ${params.DEPLOY_ENV}"
-            echo 'JAR artifact has been archived.'
+            echo 'Artifact archived successfully.'
             echo '======================================'
         }
 
         failure {
             echo '======================================'
-            echo 'Maven pipeline FAILED!'
+            echo 'PIPELINE FAILED!'
+            echo 'Please check the Console Output.'
             echo '======================================'
         }
 
